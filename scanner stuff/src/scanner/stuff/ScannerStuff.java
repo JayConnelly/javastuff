@@ -18,12 +18,22 @@ public class ScannerStuff {
 
     public static void main(String[] args) {
         MyScanner ms = new MyScanner();
-        ms.scanit( "1 fish 2 fish");
+     //   ms.scanit( "1 fish 2 fish");
         
         PlusMinus pm = new PlusMinus();
-        pm.countit();
-       
+    //    pm.countit();
         
+        TestScan ts = new TestScan();
+     //   ts.scanThis("1 2 this is a test 4 again" );
+       
+        boolean[] all = { false, true };
+     for (boolean a : all) {
+        for (boolean b: all) {
+            boolean c = a ^ b;
+       //     System.out.println(a + " ^ " + b + " = " + c);
+        }
+    }
+
     }
     
 }

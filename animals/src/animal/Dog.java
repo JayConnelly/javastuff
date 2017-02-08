@@ -10,9 +10,15 @@ package animal;
  * @author Jay
  */
 public class Dog extends Animal {
+  
    public Dog(String newName) {
        super();
        name = newName;
-       System.out.println("In dog Constructor for " + this.name + " num animals = " +  numberOfAnimals);
+       //System.out.println("In dog Constructor for " + newName );
+   }
+   
+   @Override
+   public String getSound() {
+       return "woof";
    }
 }

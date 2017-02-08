@@ -14,4 +14,8 @@ public class Cat extends Animal {
        super();
        name = newName;
    }
+   @Override
+   public String getSound() {
+       return "meow";
+   }
 }
