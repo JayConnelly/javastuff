@@ -17,11 +17,16 @@ public class BTree {
     /**
      * @param args the command line arguments
      */
+    public static Node root; 
+    
     public  static class Node {
         // attributes and values
         int payload = -1;
         Node left;
         Node right;
+        int level = 0;
+        static int maxLeft = 0;
+        static int maxRight = 0;
         
         //Now the methods
         public Node(int i) {
@@ -45,25 +50,69 @@ public class BTree {
         public Node getRight() {
             return right;
         }
+        
+        public int getDepth(Node n) {
+            int leftDepth = 0;
+            int rightDepth = 0;
+            if (n.left != null) {
+                leftDepth = getDepth(n.left);
+            } else {
+                leftDepth = n.level;
+            }
+        
+            if (n.right != null) {
+                rightDepth = getDepth(n.right) + rightDepth;
+            } else {
+                rightDepth = n.level;
+            }
+            System.out.println(" depth for node " + n.payload + " right = " + rightDepth + " Left = " + leftDepth);
+            System.out.println(" returning " + Integer.max(leftDepth,rightDepth));
+            return(Integer.max(leftDepth, rightDepth));
+        }
+        
+        
+/*
+    public void balanceTree(Node n) {
+            int rightDepth;
+            if (right != null) {
+                rightDepth = getDepth(n.right)
+            } else rightDepth = 0;
+            
+            if (left != null) {
+                leftDepth = getDepth(n.right)
+            } else leftDepth = 0;
+            
+            System.out.println("node " + payload + " right depth = " + leftDepth + " right depth = " + rightDepth);
+        }
+  */          
+            
+        
         public void addNode(int i) {
             // first find the right spot
+            
             System.out.println("adding node " + i);
             if (i < this.payload) {
-                System.out.println("going left.  i =  " + i + " mypayload = " + this.payload);
                 
                 if (this.left == null) {
                     setLeft(new Node(i));
+                    this.left.level = this.level + 1;
+                    System.out.println(" Adding left node for " + i + " Level = " + left.level);
                 } else {
                     this.left.addNode(i);
                 }
             } else {  // i> payload
-                System.out.println("going right.  i =  " + i + " mypayload = " + this.payload);
-                if (this.right == null) {
+                if (right == null) {
                     setRight(new Node(i));
+                    right.level = level + 1;
+                    System.out.println(" Adding right node for " + i + " Level = " + right.level );
                 } else {
                     this.right.addNode(i);
                 }
             }
+            
+            // now level them
+ //          int depth = getDepth(root);
+ //          System.out.println(" Depth = " + depth);
         }
         
         public void printNode() {
@@ -83,9 +132,9 @@ public class BTree {
     
     public static void main(String[] args) {
         // TODO code application logic here
-        String input = "5 2 7 4 -8 9 6 3 16 -2";
+        String input = "3 2 4 5 6";
         Scanner sc = new Scanner(input);
-        Node root = new Node(sc.nextInt());
+        root = new Node(sc.nextInt());
         while(sc.hasNextInt()) {
             root.addNode(sc.nextInt());
         }

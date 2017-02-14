@@ -41,7 +41,6 @@ public class IceCream {
                     items[0] = (c1 < c2) ? c1 + 1 : c2 + 1;
                     items[1] = (c1 < c2) ? c2 + 1 : c1 + 1;
                     //System.out.println("Found solution, item 1 = " + items[0] +  " item 2 = " + items[1]);
-                    
                     return;
                 }
             }
