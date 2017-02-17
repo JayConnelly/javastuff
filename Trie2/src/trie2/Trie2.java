@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package trie;
+package trie2;
 import java.util.*;
 import java.io.*;
 
@@ -11,7 +11,7 @@ import java.io.*;
  *
  * @author Jay
  */
-public class Trie {
+public class Trie2 {
 
     /**
      * @param args the command line arguments
@@ -20,17 +20,31 @@ public class Trie {
     static  Node head;
        
     protected static class Node {
-        HashMap<Character,Node> children = new HashMap<>();
+        //HashMap<Character,Node> children = new HashMap<>();
+        Node[] children = new Node[26];
         boolean isWord = false;
+       
+        public Node() {
+            Arrays.fill(children, null);
+           // for (int i=0;i<26;i++) { children[i] = null; }
+        }
+       
+            static final int A = (int) 'a';
+       
+       // protected static class CharInt {
+        public int translate(char c) {
+                return((int) c - A);
+        }
         
 
         protected void add(String s) {
             
             Node next;
+
             if ( ! s.isEmpty()) {
                 //System.out.println("S not mt - Adding " + s);
-                char c = s.charAt(0);
-                next = children.get(c);
+                Character c = s.charAt(0);
+                next = children[translate(c)];
                 if (next != null) {
                     // send the substring down the chain
                     next.add(s.substring(1));
@@ -38,7 +52,7 @@ public class Trie {
                     // now more children in the string
                     //System.out.println(" did not find char " + s.charAt(0) + " creating new node and adding to hash");               
                     next = new Node();
-                    children.put(c, (Node) next);
+                    children[translate(c)] = next;
                     //System.out.println(" calling next.add with  " + s.substring(1, s.length()) );               
 
                     next.add(s.substring(1));
@@ -55,10 +69,11 @@ public class Trie {
    
             if (isWord) { words++;  }
 
-            for (Node node : children.values()) {
-                words = words + node.findRemaining();
+            for (int i = 0; i<26; i++) {
+                if (children[i] != null) {
+                    words = words + children[i].findRemaining();
+                }
             }
-            //System.out.println(" find remaining returning " + words);
             return (words);
         }
         
@@ -69,7 +84,7 @@ public class Trie {
             
             if ( ! s.isEmpty()) {
                 //System.out.println("Looking for " + s);
-                next = children.get(s.charAt(0));
+                next = children[translate(s.charAt(0))];
  
                 if (next != null) {
                     words = words + next.findAll(s.substring(1));        
