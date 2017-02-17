@@ -86,24 +86,28 @@ public class Trie {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException {
         // Try adding a new word
         int numWords = 0;
+        String nextArg = "";
+        String nextOp;
         head = new Node();
-        Scanner sc = new Scanner("6 add a add apple add application add apartment find a find ap");
+        
+        File f = new File("data1.txt");
+        Scanner sc = new Scanner(f);
         int numOps = sc.nextInt();
-        for (int i = 0; i < numOps; i++) {
-            String nextOp = sc.next();
+ 
+        for (int i = 0 ; i < numOps; i++)  { //while (sc.hasNext()) { //for (int i = 0; i < numOps; i++) {
+            nextOp = (String) sc.next();
+            nextArg = sc.next();
+            
             if ( "add".equals(nextOp) ) {
-                head.add(sc.next());
-            } else {
-                numWords = head.findAll(sc.next());
-                System.out.println(" Found " + numWords + " words");
-            }
-        }        
-        
-        
-        //int numWords = head.findAll("appl");
+                head.add(nextArg);
+            } else if ("find".equals(nextOp)) {
+                numWords = head.findAll(nextArg);
+                System.out.println( numWords );
+            } 
+        }
     }
     
 }
