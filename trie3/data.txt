@@ -1,0 +1,9 @@
+8
+add appartment
+add apple
+add applications
+add apache
+find a
+find app
+find appl
+find s

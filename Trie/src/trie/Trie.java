@@ -99,7 +99,7 @@ public class Trie {
                 head.add(sc.next());
             } else if ("find".equals(nextOp)) {
                 numWords = head.findAll(sc.next());
-                System.out.println( numWords );
+                //System.out.println( numWords );
             } 
         }
     }
