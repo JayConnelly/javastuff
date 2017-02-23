@@ -25,37 +25,76 @@ public class MatchingBrackets {
         String close = ")]}";
         
         
-        File f = new File("data.txt");
+        File f = new File("data1.txt");
         Scanner sc = new Scanner(f);
-        char p;
+        char p = ' ';
         
         
         int numStrings = sc.nextInt();
-       // System.out.println("numstrings = " + numStrings);
+        System.out.println("numstrings = " + numStrings);
         String str;
+        final int PAREN = 0;
+        final int BRACE = 1;
+        final int BRACKET = 2;
+
     
         for (int i = 0; i < numStrings; i++) {
             boolean matches = true;
+            int[] isOpen = {0,0,0};
             str = sc.next();
+            int c = 0;
             //System.out.println("string = " + str);
-            for (int c = 0; c<str.length(); c++) {
+            do {
+                
                 Character current = str.charAt(c);
                // System.out.printf("char at position %d = %c ",c,current);
 
                 String curString = current.toString();
                 if (open.contains(curString)) {  //open paren
+                     switch (current) {
+                        case '(':
+                            isOpen[PAREN]++;
+                            break;
+                        case '[':
+                            isOpen[BRACKET]++;
+                            break;
+                        case '{':
+                            isOpen[BRACE]++;
+                            break;    
+                    }
                     s.push(current);
-                 //   System.out.println("Pushing " + current);
+                 //System.out.printf("Pushing %c Open Parns = %d Open brackets = %d, open braces = %d \n", current, isOpen[PAREN], isOpen[BRACKET], isOpen[BRACE]);
 
                 }
                 else { // must be a close
+   // pushing a close.  early out test to see if there are opens
+                     switch (current) {
+                        case ')':
+                            if ( --isOpen[PAREN] < 0) {
+                              matches = false;
+                            } 
+                            break;
+                        case ']':
+                            if ( --isOpen[BRACKET] < 0) {
+                                matches = false;
+                                
+                            } 
+                            break;
+                        case '}':
+                            if ( --isOpen[BRACE] < 0) {
+                                matches = false;
+                                
+                            } 
+                            break;    
+                    }
                     Iterator itr = s.iterator();
                     if (! s.empty()) {
                         p = s.pop();
+                       //System.out.printf("Popped %c Open Parns = %d Open brackets = %d, open braces = %d \n", p, isOpen[PAREN], isOpen[BRACKET], isOpen[BRACE]);
                     } else {
                         matches = false;
                         //c = str.length();
-                        continue;
+                        
                     }
                    // System.out.println("Popped " + current);
                     // pop must match current character
@@ -71,11 +110,15 @@ public class MatchingBrackets {
                             break;    
                     }
                 }
-            }
-            if (matches) {
+            c++;
+            } while (matches && c<str.length());
+                
+            if (matches && isOpen[BRACKET]==0 && isOpen[BRACE]==0 && isOpen[PAREN]==0) {
                 System.out.println("YES");
             } else {
+                //System.out.printf(" Open Parns = %d Open brackets = %d, open braces = %d  ", isOpen[PAREN], isOpen[BRACKET], isOpen[BRACE]);
                 System.out.println("NO");
+                matches = true;
             }
         }
     }
