@@ -13,87 +13,149 @@ import java.io.*;
  * @author Jay
  */
 public class ParkingGarage {
-    static final String CAR = "C";          // input format for car 
-    static final String  MOTORCYCLE = "M";  // input format for motorcycle
+    static final String CAR = "C";          // input format for car (would use integers in production)
+    static final String  MOTORCYCLE = "M";  // input format for motorcycle (The letters helped with debug)
     
     static final int CARSIZE = 3;           // width of car 
     static final int  MOTORCYCLESIZE = 1;   // width of motorcycle
 
-    static int numCarSpots = -1;        // number of spots designated for cars
-    static int numMotorSpots = -1;      // number of spots designated for motor cycles
-    static int numBlocked = 0;        // worst mumber of motorCycle Spots blocked
+    static class Spots {    // 2 types of slots - motorcycle and car
+        int numSpots = 0;
+        int numCars = 0;    // need these for exit
+        int numMotorCycles = 0;
+        int getNumCars() { return (numCars); }
+        int getNumMotorCycles() { return (numMotorCycles); }
+        void setSpots(int spots) { numSpots = spots; }
+    }
     
-    // next couple are only for parking in motorcycle slots. probably better names to be had
-    static boolean isSpaceForCar() { return ((numMotorSpots - numBlocked) >= CARSIZE); }
-    static boolean isSpaceForMotorCycle() { return (numMotorSpots  >= MOTORCYCLESIZE); }
+    static class MSpots extends Spots {     // motorcycle parking spots
+        static int numBlocked = 0;
+         boolean isSpaceForCar() { return ((numSpots - numBlocked) >= CARSIZE); }
+         boolean isSpaceForMotorCycle() { return (numSpots  >= MOTORCYCLESIZE); }
+ 
+         void leaving(Vehicle v) {  // vehicle leaving motorcycle spots 
+            if (v.isCar()) {
+                numCars--;
+                numSpots += 3;
+                numBlocked -= 2;
+            } else {   // motorcycle is leaving
+                numMotorCycles--;
+                numSpots++;
+            }
+        }
+
+        boolean tryToPark(Vehicle v) {   //parking in motorcycle spots
+             if (v.isCar() && isSpaceForCar()) {
+                numBlocked += 2;    // blocks 2 additional spaces for cars
+                numCars++;
+                numSpots -= 3;
+                return true;
+           } else if ( v.isMotorCycle() && isSpaceForMotorCycle()) {
+               numBlocked +=2;
+               numMotorCycles++;
+               numSpots--;
+               return true;
+           } else {
+               return false;
+           }               
+        }
+    }
     
+    static class CSpots extends Spots {
+         boolean isSpaceForCar() { return (numSpots > 0); }
+         boolean isSpaceForMotorCycle() { return (numSpots > 0); }
+
+         void leaving(Vehicle v) { 
+            numSpots++;
+            if (v.isCar()) {
+                numCars--;
+            } else {   // motorcycle is leaving
+                numMotorCycles--;
+            }
+        }
+         
+        boolean tryToPark(Vehicle v) {  // park in teh car spot
+           if (numSpots > 0) {                         // parking in  car spot
+                numSpots--;        // must have taken a car slot
+                if (v.isCar()) { numCars++; }
+                if (v.isMotorCycle()) { numMotorCycles++; }
+                return (true);
+            } else {
+               return false;
+           }
+        }
+    }
+
+    // instantiate the different classes for spot
+    static MSpots motorCycleSpots = new MSpots();
+    static CSpots carSpots = new CSpots();
+    
+
+    // The vehicle class represents either a motorcycle or a car.
     protected static class Vehicle {
-        static int numVehicles = 0;
         private int size = 0;       // 1 for notorcycle, 3 for car
         private String name;        // printable name based on type
-        String parkedAt;    // so we can unwind when it leaves
-
-        void dump() { 
-            if (parkedAt != null) {
-                System.out.printf( "Vehicle %d is a %s parked in %s \n ", numVehicles, name, parkedAt);
-            } else {
-                System.out.printf( "Vehicle %d is a %s and is not parked\n ", numVehicles, name);
-
-            }
-         };
+        
+        boolean parking = false;    // keep track of what this vehicle wants to do
+        boolean leaving = false;
         
         String getName() { return(name); }
-        
         boolean isCar() { return( (size == CARSIZE));}
         boolean isMotorCycle() { return( (size == MOTORCYCLESIZE));}
-        
-        
-        boolean tryToPark(String typeOfSpot) {           // park the vehicle and adjust totals
-            boolean allowed = false;
-            if (typeOfSpot.equals(MOTORCYCLE)) {        // parking in a motorcycle spot
-                //System.out.println(" Trying to parking in motorcycle space");
-                if ( (isCar() && isSpaceForCar()) || (isMotorCycle() && isSpaceForMotorCycle()) )   {  
-                    //System.out.println(" parking in motorcycle space");
-                    numMotorSpots  -= size;      // remove actual spots used 
-                    numBlocked += 2;    // blocks 2 additional spaces for cars
-                    parkedAt = MOTORCYCLE;      // remember where we parked for when we leave
-                    allowed = true;
-                } 
-            } else if (typeOfSpot.equals(CAR) && (numCarSpots > 0) ) {                         // parking in  car spot
-                    //System.out.println(" parking in car space");
-                    numCarSpots -= 1;        // must have taken a car slot
-                    parkedAt = CAR;         // remember where we parked for when we leave
-                    allowed = true;
+        boolean tryingToPark() { return( parking);}        
+        boolean isLeaving() { return( leaving );}
+
+        boolean leave() {    
+            if (isCar()) {
+                // try to leave from car spot
+                if (carSpots.getNumCars() > 0 ) {    // means there is a car parked in cars
+                    carSpots.leaving(this);
+                } else if (motorCycleSpots.getNumCars() > 0) {  // must be leaiving from mortor cycles
+                    motorCycleSpots.leaving(this);
+                } else {
+                    System.out.println(" Error car leaving.  No cars parked ");
+                    return false;  
+                }
+            } else {  // must be a motorcycle leaving
+                if (motorCycleSpots.getNumMotorCycles() > 0 ) {    // motor cycles leave from motorcycle spots first
+                    motorCycleSpots.leaving(this);
+                } else if (carSpots.getNumMotorCycles() > 0) {  // else leave from car slots
+                    carSpots.leaving(this);
+                } else {
+                    System.out.println(" Error motorcycle leaving.  No motorcycles parked ");
+                    return false;
+                }
             }
-            
-            //System.out.printf("parking in %s = %b ,  %b %b %b %b %d \n",typeOfSpot, allowed, isCar(),isSpaceForCar(), isMotorCycle(), isSpaceForMotorCycle(), numBlocked);
-            //System.out.printf("motorspots =  %d,  blocked = %d \n" , numMotorSpots, numBlocked);
-            //dump();
-            return(allowed);
+            return true;
         }
                 
-        boolean canPark() {
+        boolean canPark() {    // see if we can park this vehicle
             if (isCar()) {      // cars park in motorcycle first or car slot 2nd
-                return (tryToPark(MOTORCYCLE) || tryToPark(CAR));
+                return (motorCycleSpots.tryToPark(this) || carSpots.tryToPark(this));
             } else {            // motorcycles park in car spots first then motorcycles if avauilable
-                return (tryToPark(CAR) || tryToPark(MOTORCYCLE));
+                return (carSpots.tryToPark(this) || motorCycleSpots.tryToPark(this));
             }
         }
                     
         Vehicle( String vString) {
-            switch (vString) {
+            if (vString.charAt(0)== '+') {     // trying to park a new v
+                parking = true;
+            } else if (vString.charAt(0)== '-') {  // v is leaving
+                leaving = true;
+            }
+        
+            switch (vString.substring(1)) {
                 case CAR:
-                    size = 3;
                     name = CAR;
+                    size = 3;  
                     break;
                 case MOTORCYCLE:
-                    size = 1;
                     name = MOTORCYCLE;
+                    size = 1;
                     break;
                 default:
                     System.out.println(" Invalid vehicle type " + vString);
             }
-            numVehicles++;
         }
     }
      
@@ -102,16 +164,24 @@ public class ParkingGarage {
         File f = new File("data.txt");
         Scanner sc = new Scanner(f);
         
-        numCarSpots = sc.nextInt();
-        numMotorSpots = sc.nextInt();
+        carSpots.setSpots(sc.nextInt());
+        motorCycleSpots.setSpots (sc.nextInt());
                 
         while ( sc.hasNext() ) {   // keep going while vehicles are coming
             Vehicle v  = new Vehicle((String) sc.next());
-    
-            if (v.canPark()) {
-                System.out.println("Welcome " + v.getName());
+            if (v.tryingToPark()) {  // separate parking from leaving
+                if (v.canPark()) {
+                    System.out.println("Welcome " + v.getName());                  
+                } else {
+                    System.out.println("Sorry - all full " + v.getName());
+             }
+            } else  if (v.isLeaving()) {  // must be leaving
+                boolean success = v.leave();
+                if (success) { 
+                    System.out.println("Have a nice day " + v.getName());
+                }
             } else {
-                System.out.println("Sorry - all full " + v.getName());
+                System.out.println("Invalid Input" + v.getName());
             }
         }
     }
