@@ -45,23 +45,24 @@ public class ParkingGarage {
         }
 
         boolean tryToPark(Vehicle v) {   //parking in motorcycle spots
-             if (v.isCar() && isSpaceForCar()) {
+            boolean parked = false;
+            if (v.isCar() && isSpaceForCar()) {
                 numBlocked += 2;    // blocks 2 additional spaces for cars
                 numCars++;
                 numSpots -= 3;
-                return true;
-           } else if ( v.isMotorCycle() && isSpaceForMotorCycle()) {
+                parked = true;
+            } else if ( v.isMotorCycle() && isSpaceForMotorCycle()) {
                numBlocked +=2;
                numMotorCycles++;
                numSpots--;
-               return true;
-           } else {
-               return false;
-           }               
+               parked = true;
+            }
+            //System.out.println(" try to park in MC Spot returning " + parked);
+            return parked;
         }
     }
     
-    static class CSpots extends Spots {
+    static class CSpots extends Spots {  //this is for all the car spots
          boolean isSpaceForCar() { return (numSpots > 0); }
          boolean isSpaceForMotorCycle() { return (numSpots > 0); }
 
@@ -74,22 +75,46 @@ public class ParkingGarage {
             }
         }
          
-        boolean tryToPark(Vehicle v) {  // park in teh car spot
-           if (numSpots > 0) {                         // parking in  car spot
+        boolean tryToPark(Vehicle v) {  // park in the car spot
+            boolean parked = false;
+            if (numSpots > 0) {                         // parking in  car spot
                 numSpots--;        // must have taken a car slot
                 if (v.isCar()) { numCars++; }
                 if (v.isMotorCycle()) { numMotorCycles++; }
-                return (true);
-            } else {
-               return false;
-           }
+                parked = true;
+            }
+            //System.out.println(" try to park in car spot returning " + parked);
+            return parked;
         }
     }
 
     // instantiate the different classes for spot
     static MSpots motorCycleSpots = new MSpots();
     static CSpots carSpots = new CSpots();
+ 
+    static ArrayList mcArr = new ArrayList();
+    static ArrayList carArr = new ArrayList();
     
+    // read in all the configs.  format:  first line is number of configs.  Each config is a line starting with an "M" or a "C" and followed by the number of slots
+    static int getConfigs(Scanner sc) {
+        // get number of configurations
+        int numConfigs = sc.nextInt();
+        for (int i = 0; i< numConfigs; i++) {
+            String type =  sc.next();
+            if (type.equals(CAR)) {
+                CSpots cs = new CSpots();
+                cs.setSpots(sc.nextInt());
+                carArr.add(cs);
+            } else if (type.equals(MOTORCYCLE)) {
+                MSpots ms = new MSpots();
+                ms.setSpots(sc.nextInt());
+                mcArr.add(ms);
+            }
+        }
+        System.out.printf(" ParkingGarage.getConfigs found %d configs, carSize = %d, mcSize = %d \n", numConfigs, carArr.size(), mcArr.size());
+        return(numConfigs);
+    }
+
 
     // The vehicle class represents either a motorcycle or a car.
     protected static class Vehicle {
@@ -104,38 +129,86 @@ public class ParkingGarage {
         boolean isMotorCycle() { return( (size == MOTORCYCLESIZE));}
         boolean tryingToPark() { return( parking);}        
         boolean isLeaving() { return( leaving );}
-
-        boolean leave() {    
-            if (isCar()) {
-                // try to leave from car spot
-                if (carSpots.getNumCars() > 0 ) {    // means there is a car parked in cars
-                    carSpots.leaving(this);
-                } else if (motorCycleSpots.getNumCars() > 0) {  // must be leaiving from mortor cycles
-                    motorCycleSpots.leaving(this);
-                } else {
-                    System.out.println(" Error car leaving.  No cars parked ");
-                    return false;  
-                }
-            } else {  // must be a motorcycle leaving
-                if (motorCycleSpots.getNumMotorCycles() > 0 ) {    // motor cycles leave from motorcycle spots first
-                    motorCycleSpots.leaving(this);
-                } else if (carSpots.getNumMotorCycles() > 0) {  // else leave from car slots
-                    carSpots.leaving(this);
-                } else {
-                    System.out.println(" Error motorcycle leaving.  No motorcycles parked ");
-                    return false;
-                }
+        
+        boolean tryToLeaveCarSpot(Vehicle v) {
+            boolean left = false;
+            for (int i = 0; i < carArr.size(); i++) {
+                 // try to leave from car spot
+                CSpots cSpots = (CSpots) carArr.get(i);
+                if (( v.isCar() && (cSpots.getNumCars() > 0)) || ( v.isMotorCycle() && (cSpots.getNumMotorCycles() > 0))) {    // means there is a car parked in cars
+                    cSpots.leaving(this);
+                    left = true;
+                    break;
+                } 
             }
-            return true;
+            //if (left == false) { System.out.printf(" TTLC: Error - vehicle %s tried to leave car slots but none were parked \n",getName());}
+            //System.out.println(" vehicle.tryToLeaveCarSpot returning " + left);
+            return left;
+        }
+        
+        boolean tryToLeaveMotorCycleSpot(Vehicle v) {
+            boolean left = false;
+            for (int i = 0; i < mcArr.size(); i++) {
+                 // try to leave from car spot
+                MSpots mSpots = (MSpots) mcArr.get(i);
+                if (( v.isCar() && (mSpots.getNumCars() > 0)) || ( v.isMotorCycle() && (mSpots.getNumMotorCycles() > 0)))  { 
+                    mSpots.leaving(this);
+                    left = true;
+                    break;
+                }   
+            }
+           // if (left == false) { System.out.printf(" TTLMC: Error - vehicle %s tried to leave MC slots but none were parked \n", getName());}
+           // System.out.println(" vehicle.tryToLeaveMotorcycleSlot returning " + left);
+            return left;
         }
                 
+              
+        boolean leave() {
+            boolean left = false;
+            if (isCar()) {
+                left = tryToLeaveCarSpot(this) || tryToLeaveMotorCycleSpot(this);
+            } else {  // must be a motorcycle leaving - motorcycles leave from motorcycle spots first
+                left =  tryToLeaveMotorCycleSpot(this) || tryToLeaveCarSpot(this);
+            }
+            if (left == false) { System.out.printf(" vehicle.leave: Error - vehicle %s tried to leave car slots but none were parked \n", getName());}       
+            //System.out.println(" vehicle.leave returning " + left);
+            return left;
+        }
+        
+        boolean tryToParkInMotorCycleSlot(Vehicle v) {
+            boolean parked = false;
+            for (int i = 0; i < mcArr.size(); i++) {
+                MSpots mcSpots = (MSpots) mcArr.get(i);
+                if ( mcSpots.tryToPark(this)) {
+                        parked = true;
+                        break;
+                }
+            }
+            //System.out.println(" TTPM returning " + parked);
+            return (parked);
+        }
+        
+        boolean tryToParkInCarSlot(Vehicle v) {
+            boolean parked = false;
+            for (int i = 0; i < carArr.size(); i++) {
+                CSpots cSpots = (CSpots) carArr.get(i);
+                if ( cSpots.tryToPark(this)) {
+                        parked = true;
+                        break;
+                }
+            }
+            //System.out.println(" TTPC returning " + parked);
+            return(parked);
+        }
+        
         boolean canPark() {    // see if we can park this vehicle
             if (isCar()) {      // cars park in motorcycle first or car slot 2nd
-                return (motorCycleSpots.tryToPark(this) || carSpots.tryToPark(this));
+                return( tryToParkInMotorCycleSlot(this) || tryToParkInCarSlot(this));
             } else {            // motorcycles park in car spots first then motorcycles if avauilable
-                return (carSpots.tryToPark(this) || motorCycleSpots.tryToPark(this));
+                return( tryToParkInCarSlot(this) || tryToParkInMotorCycleSlot(this));
             }
         }
+        
                     
         Vehicle( String vString) {
             if (vString.charAt(0)== '+') {     // trying to park a new v
@@ -157,6 +230,8 @@ public class ParkingGarage {
                     System.out.println(" Invalid vehicle type " + vString);
             }
         }
+        
+        
     }
      
     public static void main(String[] args) throws FileNotFoundException {
@@ -164,13 +239,12 @@ public class ParkingGarage {
         File f = new File("data.txt");
         Scanner sc = new Scanner(f);
         
-        carSpots.setSpots(sc.nextInt());
-        motorCycleSpots.setSpots (sc.nextInt());
+        int numConfigs = getConfigs(sc);        
                 
         while ( sc.hasNext() ) {   // keep going while vehicles are coming
             Vehicle v  = new Vehicle((String) sc.next());
             if (v.tryingToPark()) {  // separate parking from leaving
-                if (v.canPark()) {
+                if (v.canPark()) {  // self parking vehicles :)
                     System.out.println("Welcome " + v.getName());                  
                 } else {
                     System.out.println("Sorry - all full " + v.getName());
